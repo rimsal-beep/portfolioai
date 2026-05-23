@@ -104,7 +104,22 @@ export default function Home() {
     alert("PDF generation failed: " + err.message);
   }
 }
-
+async function handleShare() {
+  try {
+    const res = await fetch("/api/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, portfolio }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const url = `${window.location.origin}/portfolio/${data.id}`;
+    await navigator.clipboard.writeText(url);
+    alert(`Link copied! 🎉\n\n${url}`);
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
+}
   function handleReset() {
     setStep("input");
     setUsername("");
@@ -199,15 +214,19 @@ export default function Home() {
               <p className="text-violet-400 text-sm mt-1">AI-generated portfolio</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={handleDownloadPDF}
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 rounded-lg text-sm font-semibold transition-colors">
-                ⬇ Download PDF
-              </button>
-              <button onClick={handleReset}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors">
-                Start Over
-              </button>
-            </div>
+  <button onClick={handleShare}
+    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-semibold transition-colors">
+    🔗 Share
+  </button>
+  <button onClick={handleDownloadPDF}
+    className="px-4 py-2 bg-violet-600 hover:bg-violet-700 rounded-lg text-sm font-semibold transition-colors">
+    ⬇ Download PDF
+  </button>
+  <button onClick={handleReset}
+    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors">
+    Start Over
+  </button>
+</div>
           </div>
 
           {/* Portfolio content wrapped in ref */}
