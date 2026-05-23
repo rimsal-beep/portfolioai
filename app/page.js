@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 
 function parsePortfolio(text) {
@@ -46,6 +46,7 @@ export default function Home() {
   const [portfolio, setPortfolio] = useState(null);
   const [error, setError] = useState("");
   const [step, setStep] = useState("input");
+  const portfolioRef = useRef(null);
 
   async function handleFetchRepos() {
     if (!username) return;
@@ -86,6 +87,23 @@ export default function Home() {
       setLoading(false);
     }
   }
+
+ async function handleDownloadPDF() {
+  try {
+    const res = await fetch("/api/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ portfolio, username }),
+    });
+    const data = await res.json();
+    const link = document.createElement("a");
+    link.href = data.pdf;
+    link.download = `${username}-portfolio.pdf`;
+    link.click();
+  } catch (err) {
+    alert("PDF generation failed: " + err.message);
+  }
+}
 
   function handleReset() {
     setStep("input");
@@ -180,42 +198,53 @@ export default function Home() {
               <h2 className="text-3xl font-bold">@{username}</h2>
               <p className="text-violet-400 text-sm mt-1">AI-generated portfolio</p>
             </div>
-            <button onClick={handleReset} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors">
-              Start Over
-            </button>
-          </div>
-
-          {/* Bio */}
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-6">
-            <h3 className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-3">About</h3>
-            <p className="text-gray-200 leading-relaxed text-lg">{portfolio.bio}</p>
-          </div>
-
-          {/* Skills */}
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-6">
-            <h3 className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-3">Skills</h3>
-            <div className="flex flex-wrap gap-2">
-              {portfolio.skills.map((skill, i) => (
-                <span key={i} className="px-3 py-1 bg-violet-900/40 border border-violet-700/50 text-violet-300 rounded-full text-sm">
-                  {skill}
-                </span>
-              ))}
+            <div className="flex gap-3">
+              <button onClick={handleDownloadPDF}
+                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 rounded-lg text-sm font-semibold transition-colors">
+                ⬇ Download PDF
+              </button>
+              <button onClick={handleReset}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors">
+                Start Over
+              </button>
             </div>
           </div>
 
-          {/* Projects */}
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-            <h3 className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-4">Projects</h3>
-            <div className="flex flex-col gap-4">
-              {portfolio.projects.map((project, i) => (
-                <div key={i} className="border border-gray-700 rounded-lg p-4 hover:border-violet-700/50 transition-colors">
-                  <h4 className="font-semibold text-white mb-1">{project.name}</h4>
-                  <p className="text-gray-400 text-sm leading-relaxed">{project.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Portfolio content wrapped in ref */}
+          <div ref={portfolioRef} className="flex flex-col gap-6 bg-gray-950 p-4 rounded-xl">
 
+            {/* Bio */}
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+              <h3 className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-3">About</h3>
+              <p className="text-gray-200 leading-relaxed text-lg">{portfolio.bio}</p>
+            </div>
+
+            {/* Skills */}
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+              <h3 className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-3">Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {portfolio.skills.map((skill, i) => (
+                  <span key={i} className="px-3 py-1 bg-violet-900/40 border border-violet-700/50 text-violet-300 rounded-full text-sm">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Projects */}
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+              <h3 className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-4">Projects</h3>
+              <div className="flex flex-col gap-4">
+                {portfolio.projects.map((project, i) => (
+                  <div key={i} className="border border-gray-700 rounded-lg p-4 hover:border-violet-700/50 transition-colors">
+                    <h4 className="font-semibold text-white mb-1">{project.name}</h4>
+                    <p className="text-gray-400 text-sm leading-relaxed">{project.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
         </div>
       )}
     </main>
