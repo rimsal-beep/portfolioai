@@ -37,7 +37,28 @@ function parsePortfolio(text) {
   }
   return sections;
 }
+function parseFeedback(text) {
+  const result = { score: "", strengths: [], weaknesses: [], missing: [], suggestions: [], verdict: "" };
+  const lines = text.split("\n");
+  let current = "";
 
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.startsWith("SCORE:")) { result.score = t.replace("SCORE:", "").trim(); continue; }
+    if (t === "STRENGTHS:") { current = "strengths"; continue; }
+    if (t === "WEAKNESSES:") { current = "weaknesses"; continue; }
+    if (t === "MISSING:") { current = "missing"; continue; }
+    if (t === "SUGGESTIONS:") { current = "suggestions"; continue; }
+    if (t === "VERDICT:") { current = "verdict"; continue; }
+
+    if (t.startsWith("- ") && current !== "verdict") {
+      result[current]?.push(t.replace("- ", ""));
+    } else if (current === "verdict" && t) {
+      result.verdict += t + " ";
+    }
+  }
+  return result;
+}
 export default function Home() {
   const { data: session } = useSession();
   const [username, setUsername] = useState("");
@@ -47,6 +68,8 @@ export default function Home() {
   const [error, setError] = useState("");
   const [step, setStep] = useState("input");
   const portfolioRef = useRef(null);
+  const [feedback, setFeedback] = useState(null);
+const [feedbackLoading, setFeedbackLoading] = useState(false);
 
   async function handleFetchRepos() {
     if (!username) return;
@@ -118,6 +141,23 @@ async function handleShare() {
     alert(`Link copied! 🎉\n\n${url}`);
   } catch (err) {
     alert("Error: " + err.message);
+  }
+}
+async function handleGetFeedback() {
+  setFeedbackLoading(true);
+  try {
+    const res = await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ portfolio, username }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    setFeedback(parseFeedback(data.feedback));
+  } catch (err) {
+    alert("Error: " + err.message);
+  } finally {
+    setFeedbackLoading(false);
   }
 }
   function handleReset() {
@@ -264,6 +304,89 @@ async function handleShare() {
             </div>
 
           </div>
+          {/* Recruiter Feedback Button */}
+          <div className="mt-6 text-center">
+            {!feedback && (
+              <button
+                onClick={handleGetFeedback}
+                disabled={feedbackLoading}
+                className="px-6 py-3 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-violet-500 rounded-lg font-semibold transition-all disabled:opacity-50"
+              >
+                {feedbackLoading ? "Analyzing your profile..." : "🧠 Get Recruiter Feedback"}
+              </button>
+            )}
+          </div>
+
+          {/* Feedback Output */}
+          {feedback && (
+            <div className="mt-6 bg-gray-900 rounded-xl border border-violet-800/50 p-6">
+              <h3 className="text-lg font-bold text-violet-400 mb-6">🧠 Recruiter Feedback</h3>
+
+              {/* Score */}
+              <div className="flex items-center gap-4 mb-6 p-4 bg-gray-800 rounded-lg">
+                <div className="text-5xl font-bold text-violet-400">{feedback.score}</div>
+                <div>
+                  <p className="text-white font-semibold">Portfolio Score</p>
+                  <p className="text-gray-400 text-sm">out of 10</p>
+                </div>
+              </div>
+
+              {/* Verdict */}
+              <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+               <p className="text-gray-200 leading-relaxed italic">&ldquo;{feedback.verdict}&rdquo;</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Strengths */}
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h4 className="text-green-400 font-semibold mb-3">💪 Strengths</h4>
+                  <ul className="flex flex-col gap-2">
+                    {feedback.strengths.map((s, i) => (
+                      <li key={i} className="text-gray-300 text-sm flex gap-2">
+                        <span className="text-green-400 mt-0.5">✓</span> {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Weaknesses */}
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h4 className="text-red-400 font-semibold mb-3">⚠️ Weaknesses</h4>
+                  <ul className="flex flex-col gap-2">
+                    {feedback.weaknesses.map((w, i) => (
+                      <li key={i} className="text-gray-300 text-sm flex gap-2">
+                        <span className="text-red-400 mt-0.5">✗</span> {w}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Missing */}
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h4 className="text-yellow-400 font-semibold mb-3">📌 Missing</h4>
+                  <ul className="flex flex-col gap-2">
+                    {feedback.missing.map((m, i) => (
+                      <li key={i} className="text-gray-300 text-sm flex gap-2">
+                        <span className="text-yellow-400 mt-0.5">!</span> {m}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Suggestions */}
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h4 className="text-blue-400 font-semibold mb-3">💡 Suggestions</h4>
+                  <ul className="flex flex-col gap-2">
+                    {feedback.suggestions.map((s, i) => (
+                      <li key={i} className="text-gray-300 text-sm flex gap-2">
+                        <span className="text-blue-400 mt-0.5">→</span> {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </main>
