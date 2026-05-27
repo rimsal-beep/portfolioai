@@ -28,9 +28,9 @@ export default async function FeedbackPage({ params }) {
         <Link href="/" style={{fontSize: "1.3rem", fontWeight: "800", cursor: "pointer", textDecoration: "none"}}>
           Portfolio<span style={{background: "linear-gradient(135deg,#a855f7,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"}}>AI</span>
         </Link>
-        <Link href={`/portfolio/${id}`} style={{padding: "10px 20px", borderRadius: "10px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#d1d5db", textDecoration: "none", fontSize: "0.875rem"}}>
-          ← Back to Portfolio
-        </Link>
+       <Link href="/" style={{padding: "10px 20px", borderRadius: "10px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#d1d5db", textDecoration: "none", fontSize: "0.875rem"}}>
+  ← Generate New
+</Link>
       </div>
 
       <div style={{maxWidth: "800px", margin: "0 auto", padding: "0 32px"}}>

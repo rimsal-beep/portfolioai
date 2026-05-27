@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+
 export default async function PortfolioPage({ params }) {
   const { id } = await params;
 
@@ -11,8 +12,8 @@ export default async function PortfolioPage({ params }) {
 
   if (error || !data) {
     return (
-      <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-        <p className="text-gray-400">Portfolio not found.</p>
+      <main style={{minHeight: "100vh", background: "#030712", color: "white", display: "flex", alignItems: "center", justifyContent: "center"}}>
+        <p style={{color: "#9ca3af"}}>Portfolio not found.</p>
       </main>
     );
   }
@@ -21,55 +22,79 @@ export default async function PortfolioPage({ params }) {
   const projects = data.projects || [];
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white pb-16">
+    <main style={{minHeight: "100vh", background: "#030712", color: "white", paddingBottom: "64px"}}>
 
       {/* Navbar */}
-      <div className="flex justify-between items-center px-8 py-4 bg-gray-900 border-b border-gray-800 mb-12">
-        <h2 className="text-xl font-bold">
-          Portfolio<span className="text-violet-500">AI</span>
-        </h2>
-       <Link href="/" className="px-4 py-2 bg-violet-600 hover:bg-violet-700 rounded-lg text-sm font-semibold transition-colors">
-  Generate Yours →
-</Link>
+      <div style={{position: "sticky", top: 0, zIndex: 50, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 48px", marginBottom: "48px", background: "rgba(3,7,18,0.85)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.07)"}}>
+        <Link href="/" style={{fontSize: "1.3rem", fontWeight: "800", cursor: "pointer", textDecoration: "none", color: "white"}}>
+          Portfolio<span style={{background: "linear-gradient(135deg,#a855f7,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"}}>AI</span>
+        </Link>
+        <div style={{display: "flex", gap: "12px", alignItems: "center"}}>
+          {data.feedback && (
+            <Link href={`/feedback/${id}`} style={{padding: "10px 18px", borderRadius: "10px", background: "rgba(124,58,237,0.15)", border: "1px solid rgba(124,58,237,0.3)", color: "#a78bfa", textDecoration: "none", fontSize: "0.875rem", fontWeight: "600"}}>
+              🧠 View Feedback
+            </Link>
+          )}
+          <Link href="/" style={{padding: "10px 20px", borderRadius: "10px", background: "linear-gradient(135deg,#7c3aed,#6d28d9)", boxShadow: "0 0 20px rgba(124,58,237,0.3)", color: "white", textDecoration: "none", fontSize: "0.875rem", fontWeight: "600"}}>
+            Generate Yours →
+          </Link>
+        </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4">
+      <div style={{maxWidth: "860px", margin: "0 auto", padding: "0 32px"}}>
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">@{data.username}</h1>
-          <p className="text-violet-400 text-sm mt-1">AI-generated portfolio</p>
+        {/* Profile Hero */}
+        <div style={{background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(219,39,119,0.06))", border: "1px solid rgba(124,58,237,0.25)", borderRadius: "24px", padding: "40px", marginBottom: "16px", position: "relative", overflow: "hidden"}}>
+          <div style={{position: "absolute", top: "-60px", right: "-60px", width: "200px", height: "200px", background: "radial-gradient(circle, rgba(124,58,237,0.2), transparent)", borderRadius: "50%", pointerEvents: "none"}}></div>
+          <div style={{position: "relative"}}>
+            <p style={{color: "#a78bfa", fontSize: "0.7rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "12px"}}>Developer Portfolio</p>
+            <h1 style={{fontSize: "2.5rem", fontWeight: "800", letterSpacing: "-0.02em", marginBottom: "8px"}}>@{data.username}</h1>
+            <p style={{color: "#6b7280", fontSize: "0.875rem"}}>AI-generated portfolio · PortfolioAI</p>
+          </div>
         </div>
 
         {/* Bio */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-6">
-          <h3 className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-3">About</h3>
-          <p className="text-gray-200 leading-relaxed text-lg">{data.bio}</p>
+        <div style={{background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "20px", padding: "28px", marginBottom: "16px"}}>
+          <p style={{color: "#a78bfa", fontSize: "0.7rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "14px"}}>Summary</p>
+          <p style={{color: "#e5e7eb", lineHeight: "1.9", fontSize: "1.05rem"}}>{data.bio}</p>
         </div>
 
         {/* Skills */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-6">
-          <h3 className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-3">Skills</h3>
-          <div className="flex flex-wrap gap-2">
+        <div style={{background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "20px", padding: "28px", marginBottom: "16px"}}>
+          <p style={{color: "#a78bfa", fontSize: "0.7rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "16px"}}>Technical Skills</p>
+          <div style={{display: "flex", flexWrap: "wrap", gap: "10px"}}>
             {skills.map((skill, i) => (
-              <span key={i} className="px-3 py-1 bg-violet-900/40 border border-violet-700/50 text-violet-300 rounded-full text-sm">
-                {skill}
+              <span key={i} style={{padding: "7px 16px", borderRadius: "999px", background: "rgba(124,58,237,0.15)", border: "1px solid rgba(124,58,237,0.3)", color: "#c4b5fd", fontSize: "0.875rem", fontWeight: "500"}}>
+                {skill.trim()}
               </span>
             ))}
           </div>
         </div>
 
         {/* Projects */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-          <h3 className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-4">Projects</h3>
-          <div className="flex flex-col gap-4">
+        <div style={{background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "20px", padding: "28px", marginBottom: "32px"}}>
+          <p style={{color: "#a78bfa", fontSize: "0.7rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "20px"}}>Featured Projects</p>
+          <div style={{display: "flex", flexDirection: "column", gap: "14px"}}>
             {projects.map((project, i) => (
-              <div key={i} className="border border-gray-700 rounded-lg p-4 hover:border-violet-700/50 transition-colors">
-                <h4 className="font-semibold text-white mb-1">{project.name}</h4>
-                <p className="text-gray-400 text-sm leading-relaxed">{project.desc}</p>
+              <div key={i} style={{background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "20px"}}>
+                <div style={{display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px"}}>
+                  <div style={{width: "32px", height: "32px", borderRadius: "8px", background: "linear-gradient(135deg,rgba(124,58,237,0.3),rgba(219,39,119,0.2))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.875rem", color: "#a78bfa", fontWeight: "700", flexShrink: 0}}>
+                    {i + 1}
+                  </div>
+                  <h4 style={{color: "white", fontWeight: "700", fontSize: "1rem"}}>{project.name}</h4>
+                </div>
+                <p style={{color: "#9ca3af", fontSize: "0.9rem", lineHeight: "1.7", paddingLeft: "42px"}}>{project.desc}</p>
               </div>
             ))}
           </div>
+        </div>
+
+        {/* CTA */}
+        <div style={{textAlign: "center", padding: "40px", background: "rgba(124,58,237,0.05)", border: "1px solid rgba(124,58,237,0.15)", borderRadius: "20px"}}>
+          <p style={{color: "#9ca3af", marginBottom: "16px"}}>Want your own AI-generated portfolio?</p>
+          <Link href="/" style={{display: "inline-block", padding: "14px 40px", borderRadius: "12px", background: "linear-gradient(135deg,#7c3aed,#6d28d9)", boxShadow: "0 0 25px rgba(124,58,237,0.35)", color: "white", textDecoration: "none", fontWeight: "700"}}>
+            Generate Mine →
+          </Link>
         </div>
 
       </div>

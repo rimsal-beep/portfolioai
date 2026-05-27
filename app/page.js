@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
-
+import Link from "next/link";
 function parsePortfolio(text) {
   const sections = { title: "", bio: "", skills: [], projects: [] };
   const lines = text.split("\n");
@@ -15,12 +15,15 @@ function parsePortfolio(text) {
     if (line === "## Skills") { current = "skills"; continue; }
     if (line === "## Projects") { current = "projects"; continue; }
 
-    if (current === "title" && line) sections.title = line;
-    if (current === "bio" && line) sections.bio += line + " ";
+    if (current === "title" && line) { sections.title = line; continue; }
+    if (current === "bio" && line) { sections.bio += line + " "; continue; }
     if (current === "skills" && line) {
       sections.skills = line.split(",").map((s) => s.trim()).filter(Boolean);
+      continue;
     }
+
     if (current === "projects") {
+      // Handle ### format
       if (line.startsWith("### ")) {
         if (projectBuffer.length) {
           const [name, ...desc] = projectBuffer;
@@ -28,7 +31,21 @@ function parsePortfolio(text) {
           projectBuffer = [];
         }
         projectBuffer.push(line);
-      } else if (line) {
+      }
+      // Handle * **name**: format
+      else if (line.startsWith("* **") || line.startsWith("- **")) {
+        if (projectBuffer.length) {
+          const [name, ...desc] = projectBuffer;
+          sections.projects.push({ name, desc: desc.join(" ").trim() });
+          projectBuffer = [];
+        }
+        const match = line.match(/\*\*([^*]+)\*\*:?\s*(.*)/);
+        if (match) {
+          projectBuffer.push(match[1]);
+          if (match[2]) projectBuffer.push(match[2]);
+        }
+      }
+      else if (line && projectBuffer.length) {
         projectBuffer.push(line);
       }
     }
@@ -202,6 +219,7 @@ async function handleGetFeedback() {
         <h2 onClick={handleReset} style={{fontSize: "1.3rem", fontWeight: "800", cursor: "pointer", letterSpacing: "-0.02em"}}>
           Portfolio<span style={{background: "linear-gradient(135deg,#a855f7,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"}}>AI</span>
         </h2>
+       
         {session ? (
           <div style={{display: "flex", alignItems: "center", gap: "16px"}}>
             <img src={session.user.image} style={{width: "34px", height: "34px", borderRadius: "50%", border: "2px solid rgba(168,85,247,0.5)"}} />
@@ -215,6 +233,7 @@ async function handleGetFeedback() {
             Sign in with GitHub
           </button>
         )}
+        
       </div>
 
      {/* STEP 1 — Input */}
@@ -475,6 +494,154 @@ async function handleGetFeedback() {
           </div>
         </div>
       )}
+     
+      {/* About Section */}
+      {step === "input" && (
+        <div style={{maxWidth: "900px", margin: "80px auto 0", padding: "0 32px"}}>
+
+          {/* What is PortfolioAI */}
+          <div style={{textAlign: "center", marginBottom: "64px"}}>
+            <p style={{color: "#a78bfa", fontSize: "0.7rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "16px"}}>What is PortfolioAI?</p>
+            <h2 style={{fontSize: "2.5rem", fontWeight: "800", marginBottom: "20px", lineHeight: "1.2"}}>
+              Your GitHub repos,<br />
+              <span style={{background: "linear-gradient(135deg,#a855f7,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"}}>
+                turned into a portfolio
+              </span>
+            </h2>
+            <p style={{color: "#9ca3af", fontSize: "1rem", maxWidth: "560px", margin: "0 auto", lineHeight: "1.8"}}>
+              Most developers are terrible at writing about themselves. PortfolioAI reads your GitHub and uses AI to craft a professional portfolio that impresses recruiters — in seconds.
+            </p>
+          </div>
+
+          {/* How it works */}
+          <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "64px"}}>
+            {[
+              {icon: "🔍", step: "01", title: "Enter GitHub username", desc: "We fetch your public repos instantly. No login required."},
+              {icon: "🤖", step: "02", title: "AI generates your portfolio", desc: "Bio, skills, and project writeups crafted in seconds."},
+              {icon: "🚀", step: "03", title: "Share or download", desc: "Get a public link or download as PDF. Ready for recruiters."},
+            ].map((item, i) => (
+              <div key={i} style={{background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "20px", padding: "28px"}}>
+                <div style={{fontSize: "1.8rem", marginBottom: "12px"}}>{item.icon}</div>
+                <p style={{color: "#6b7280", fontSize: "0.75rem", fontWeight: "700", marginBottom: "8px"}}>{item.step}</p>
+                <h3 style={{color: "white", fontWeight: "700", marginBottom: "8px", fontSize: "1rem"}}>{item.title}</h3>
+                <p style={{color: "#9ca3af", fontSize: "0.875rem", lineHeight: "1.6"}}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Features */}
+          <div style={{background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(219,39,119,0.04))", border: "1px solid rgba(124,58,237,0.2)", borderRadius: "24px", padding: "48px", marginBottom: "64px"}}>
+            <p style={{color: "#a78bfa", fontSize: "0.7rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "32px"}}>Everything You Need</p>
+            <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px"}}>
+              {[
+                {icon: "🤖", title: "AI-Generated Bio", desc: "Professional bio written from your actual GitHub activity."},
+                {icon: "💼", title: "Project Writeups", desc: "Each project described professionally — even ones with no README."},
+                {icon: "🎯", title: "Recruiter Feedback", desc: "AI scores your profile and tells you exactly how to improve."},
+                {icon: "📄", title: "PDF Export", desc: "Download your portfolio as a PDF ready to attach to applications."},
+                {icon: "🔗", title: "Shareable Link", desc: "Share via WhatsApp, LinkedIn, Twitter, Email and more."},
+                {icon: "⚡", title: "Instant Generation", desc: "Full portfolio ready in under 10 seconds. No signup needed."},
+              ].map((f, i) => (
+                <div key={i} style={{display: "flex", gap: "14px", alignItems: "flex-start"}}>
+                  <div style={{width: "40px", height: "40px", borderRadius: "10px", background: "rgba(124,58,237,0.15)", border: "1px solid rgba(124,58,237,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem", flexShrink: 0}}>
+                    {f.icon}
+                  </div>
+                  <div>
+                    <h3 style={{color: "white", fontWeight: "600", marginBottom: "4px", fontSize: "0.95rem"}}>{f.title}</h3>
+                    <p style={{color: "#9ca3af", fontSize: "0.85rem", lineHeight: "1.5"}}>{f.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Mission */}
+          <div style={{textAlign: "center", marginBottom: "80px"}}>
+            <p style={{color: "#a78bfa", fontSize: "0.7rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "16px"}}>Our Mission</p>
+            <h2 style={{fontSize: "2rem", fontWeight: "800", marginBottom: "16px"}}>Every developer deserves to be seen</h2>
+            <p style={{color: "#9ca3af", fontSize: "1rem", maxWidth: "560px", margin: "0 auto", lineHeight: "1.8"}}>
+              We built PortfolioAI because great developers were getting overlooked — not because of their skills, but because they could not present them well. We are fixing that.
+            </p>
+          </div>
+
+        </div>
+      )}
+{/* Footer */}
+      <div style={{borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: "32px", padding: "64px 48px 32px", background: "rgba(0,0,0,0.3)"}}>
+        
+        {/* Top section */}
+        <div style={{display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: "48px", maxWidth: "900px", margin: "0 auto 48px"}}>
+          
+          {/* Brand */}
+          <div>
+            <p style={{fontWeight: "800", fontSize: "1.3rem", marginBottom: "12px"}}>
+              Portfolio<span style={{background: "linear-gradient(135deg,#a855f7,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"}}>AI</span>
+            </p>
+            <p style={{color: "#6b7280", fontSize: "0.875rem", lineHeight: "1.7", marginBottom: "20px", maxWidth: "240px"}}>
+              Turn your GitHub repos into a stunning developer portfolio with AI. Free to use.
+            </p>
+            <div style={{display: "flex", gap: "12px"}}>
+              <a href="https://github.com/rimsal-beep/portfolioai" target="_blank" rel="noopener noreferrer"
+                style={{width: "36px", height: "36px", borderRadius: "8px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: "1rem"}}>
+                🐙
+              </a>
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer"
+                style={{width: "36px", height: "36px", borderRadius: "8px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: "1rem"}}>
+                𝕏
+              </a>
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer"
+                style={{width: "36px", height: "36px", borderRadius: "8px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: "1rem"}}>
+                💼
+              </a>
+            </div>
+          </div>
+
+          {/* Product */}
+          <div>
+            <p style={{color: "white", fontWeight: "600", fontSize: "0.875rem", marginBottom: "16px"}}>Product</p>
+            <div style={{display: "flex", flexDirection: "column", gap: "10px"}}>
+              {[
+                {label: "Generate Portfolio", href: "/"},
+                {label: "How it Works", href: "/#how-it-works"},
+                {label: "Features", href: "/#features"},
+              ].map((link, i) => (
+                <a key={i} href={link.href} style={{color: "#6b7280", fontSize: "0.875rem", textDecoration: "none"}}>{link.label}</a>
+              ))}
+            </div>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <p style={{color: "white", fontWeight: "600", fontSize: "0.875rem", marginBottom: "16px"}}>Resources</p>
+            <div style={{display: "flex", flexDirection: "column", gap: "10px"}}>
+              {[
+                {label: "GitHub Repo", href: "https://github.com/rimsal-beep/portfolioai"},
+                {label: "Report a Bug", href: "mailto:contact@portfolioai.dev"},
+                {label: "Request Feature", href: "mailto:contact@portfolioai.dev"},
+              ].map((link, i) => (
+                <a key={i} href={link.href} target="_blank" rel="noopener noreferrer" style={{color: "#6b7280", fontSize: "0.875rem", textDecoration: "none"}}>{link.label}</a>
+              ))}
+            </div>
+          </div>
+
+          {/* Built with */}
+          <div>
+            <p style={{color: "white", fontWeight: "600", fontSize: "0.875rem", marginBottom: "16px"}}>Built With</p>
+            <div style={{display: "flex", flexDirection: "column", gap: "10px"}}>
+              {["Next.js 14", "Groq AI", "Supabase", "GitHub OAuth"].map((tech, i) => (
+                <span key={i} style={{color: "#6b7280", fontSize: "0.875rem"}}>{tech}</span>
+              ))}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Bottom bar */}
+        <div style={{borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "24px", maxWidth: "900px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px"}}>
+          <p style={{color: "#374151", fontSize: "0.8rem"}}>© 2025 PortfolioAI. Built for developers, by developers.</p>
+          <p style={{color: "#374151", fontSize: "0.8rem"}}>Free to use · No signup required</p>
+        </div>
+
+      </div>
     </main>
   );
 }
