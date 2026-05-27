@@ -1,14 +1,15 @@
 import Groq from "groq-sdk";
+import { supabase } from "@/lib/supabase";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request) {
   try {
-    const { portfolio, username } = await request.json();
+    const { portfolio, username, portfolioId } = await request.json();
 
-    const prompt = `You are a senior tech recruiter with 10+ years of experience hiring developers.
+    const prompt = `You are a senior tech recruiter with 10+ years hiring developers at top companies like Google, Meta, and startups.
 
-Analyze this developer portfolio and give honest, specific feedback.
+Analyze this developer portfolio VERY specifically and honestly. Be precise — mention actual project names, actual skills, actual gaps.
 
 Developer: ${username}
 
@@ -19,30 +20,32 @@ Skills: ${portfolio.skills.join(", ")}
 Projects:
 ${portfolio.projects.map((p) => `- ${p.name}: ${p.desc}`).join("\n")}
 
-Respond in this EXACT format, nothing else:
+Give SPECIFIC feedback based on what you actually see. Don't be generic. Reference actual project names and skills.
 
-SCORE: [number from 1-10]
+Respond in this EXACT format:
+
+SCORE: [number 1-10, be honest and strict]
 
 STRENGTHS:
-- [strength 1]
-- [strength 2]
-- [strength 3]
+- [specific strength referencing actual projects/skills]
+- [specific strength referencing actual projects/skills]
+- [specific strength referencing actual projects/skills]
 
 WEAKNESSES:
-- [weakness 1]
-- [weakness 2]
+- [specific weakness with exact reason]
+- [specific weakness with exact reason]
 
 MISSING:
-- [missing skill or project type 1]
-- [missing skill or project type 2]
+- [specific missing skill/project type that would help this developer get hired]
+- [specific missing skill/project type]
 
 SUGGESTIONS:
-- [specific actionable suggestion 1]
-- [specific actionable suggestion 2]
-- [specific actionable suggestion 3]
+- [very specific actionable suggestion mentioning what to build or learn]
+- [very specific actionable suggestion]
+- [very specific actionable suggestion]
 
 VERDICT:
-[2 sentence summary of this candidate's employability]`;
+[2 sentences. Be specific. Mention actual skills and projects. Say exactly what kind of role this developer is ready for right now.]`;
 
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
@@ -50,9 +53,38 @@ VERDICT:
     });
 
     const text = completion.choices[0]?.message?.content || "";
-    return Response.json({ feedback: text });
 
-  } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
-  }
+    // Parse feedback
+    const result = { score: "", strengths: [], weaknesses: [], missing: [], suggestions: [], verdict: "" };
+    const lines = text.split("\n");
+    let current = "";
+    for (const line of lines) {
+      const t = line.trim();
+      if (t.startsWith("SCORE:")) { result.score = t.replace("SCORE:", "").trim(); continue; }
+      if (t === "STRENGTHS:") { current = "strengths"; continue; }
+      if (t === "WEAKNESSES:") { current = "weaknesses"; continue; }
+      if (t === "MISSING:") { current = "missing"; continue; }
+      if (t === "SUGGESTIONS:") { current = "suggestions"; continue; }
+      if (t === "VERDICT:") { current = "verdict"; continue; }
+      if (t.startsWith("- ") && current !== "verdict") {
+        result[current]?.push(t.replace("- ", ""));
+      } else if (current === "verdict" && t) {
+        result.verdict += t + " ";
+      }
+    }
+
+    // Save feedback to Supabase if portfolioId exists
+    if (portfolioId) {
+      await supabase
+        .from("portfolios")
+        .update({ feedback: result })
+        .eq("id", portfolioId);
+    }
+
+    return Response.json({ feedback: result });
+
+} catch (error) {
+  console.error("FEEDBACK ERROR:", error);
+  return Response.json({ error: error.message }, { status: 500 });
+}
 }

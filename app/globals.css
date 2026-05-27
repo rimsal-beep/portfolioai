@@ -1,26 +1,123 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #030712;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Animated gradient background */
+.gradient-bg {
+  background: radial-gradient(ellipse at 20% 50%, rgba(124, 58, 237, 0.15) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 20%, rgba(219, 39, 119, 0.1) 0%, transparent 60%),
+              radial-gradient(ellipse at 50% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
+              #030712;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #a855f7, #ec4899, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow button */
+.btn-glow {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
+  transition: all 0.3s ease;
+}
+.btn-glow:hover {
+  box-shadow: 0 0 35px rgba(124, 58, 237, 0.7);
+  transform: translateY(-1px);
+}
+
+/* Glass card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  border-color: rgba(124, 58, 237, 0.4);
+  box-shadow: 0 0 30px rgba(124, 58, 237, 0.1);
+}
+
+/* Fade in animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.fade-in-1 { animation: fadeInUp 0.5s ease 0.1s forwards; opacity: 0; }
+.fade-in-2 { animation: fadeInUp 0.5s ease 0.2s forwards; opacity: 0; }
+.fade-in-3 { animation: fadeInUp 0.5s ease 0.3s forwards; opacity: 0; }
+.fade-in-4 { animation: fadeInUp 0.5s ease 0.4s forwards; opacity: 0; }
+.fade-in-5 { animation: fadeInUp 0.5s ease 0.5s forwards; opacity: 0; }
+
+/* Skill badge */
+.skill-badge {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(219, 39, 119, 0.1));
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  transition: all 0.2s ease;
+}
+.skill-badge:hover {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.4), rgba(219, 39, 119, 0.2));
+  border-color: rgba(124, 58, 237, 0.6);
+  transform: translateY(-2px);
+}
+
+/* Score glow */
+.score-glow {
+  text-shadow: 0 0 30px rgba(168, 85, 247, 0.8);
+}
+
+/* Navbar glass */
+.navbar-glass {
+  background: rgba(3, 7, 18, 0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Input glow */
+.input-glow {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+.input-glow:focus {
+  border-color: rgba(124, 58, 237, 0.6);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.2);
+  outline: none;
+}
+/* Button press animation */
+.btn-press {
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.btn-press:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+.btn-press:active {
+  transform: scale(0.97) translateY(0px);
+  filter: brightness(0.95);
 }
