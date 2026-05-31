@@ -121,3 +121,31 @@ body {
   transform: scale(0.97) translateY(0px);
   filter: brightness(0.95);
 }
+/* ── MOBILE RESPONSIVE ────────────────────────── */
+@media (max-width: 640px) {
+
+  /* Navbar */
+  .navbar { padding: 12px 20px !important; }
+
+  /* Hero title */
+  .hero-title { font-size: 2.4rem !important; }
+
+  /* Grids → single column */
+  .grid-2col { grid-template-columns: 1fr !important; }
+  .grid-3col { grid-template-columns: 1fr !important; }
+
+  /* Containers */
+  .container { padding: 0 16px !important; }
+
+  /* Footer grid */
+  .footer-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* Feedback grid */
+  .feedback-grid { grid-template-columns: 1fr !important; }
+
+  /* Buttons row → wrap */
+  .btn-row { flex-wrap: wrap !important; }
+
+  /* Share modal */
+  .share-grid { grid-template-columns: 1fr !important; }
+}
