@@ -64,7 +64,7 @@ export default async function FeedbackPage({ params }) {
         </div>
 
         {/* Grid */}
-        <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px"}}>
+       <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginBottom: "24px"}}>
 
           <div style={{background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "16px", padding: "24px"}}>
             <h4 style={{color: "#4ade80", fontWeight: "700", marginBottom: "16px", fontSize: "1rem"}}>💪 Strengths</h4>
