@@ -100,11 +100,20 @@ export default function Home() {
         fetch(`https://api.github.com/users/${username}`)
       ]);
       if (!reposRes.ok) throw new Error("GitHub user not found");
-      const reposData = await reposRes.json();
-      const profileData = await profileRes.json();
-      setRepos(reposData);
-      setGithubProfile(profileData);
-      setStep("repos");
+     const reposData = await reposRes.json();
+const profileData = await profileRes.json();
+
+if (!Array.isArray(reposData) || reposData.length === 0) {
+  throw new Error("⚠️ This GitHub account has no public repositories. PortfolioAI needs at least one public repo to generate a portfolio.");
+}
+if (publicRepos.length === 0) {
+  throw new Error("This account only has forked repositories. PortfolioAI works best with original projects!");
+}
+setRepos(publicRepos.slice(0, 6));
+
+setRepos(reposData);
+setGithubProfile(profileData);
+setStep("repos");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -113,25 +122,32 @@ export default function Home() {
   }
 
   async function handleGeneratePortfolio() {
-    setLoading(true);
-    setError("");
-    setPortfolio(null);
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repos, username, profile: githubProfile }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setPortfolio(parsePortfolio(data.portfolio));
-      setStep("portfolio");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  if (!repos || repos.length === 0) {
+    alert("⚠️ This GitHub account has no public repositories. Cannot generate a portfolio.");
+    return;
   }
+  setLoading(true);
+  setError("");
+  setPortfolio(null);
+  try {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ repos, username, profile: githubProfile }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (!data.portfolio || data.portfolio.includes("NO_REPOS")) {
+      throw new Error("No repositories found — cannot generate portfolio.");
+    }
+    setPortfolio(parsePortfolio(data.portfolio));
+    setStep("portfolio");
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+}
 
   async function handleDownloadPDF() {
     try {
@@ -274,40 +290,53 @@ export default function Home() {
       )}
 
       {/* STEP 2 — Repos */}
-      {step === "repos" && (
-        <div style={{maxWidth: "700px", margin: "0 auto", padding: "0 16px"}}>
-          <div style={{marginBottom: "24px"}}>
-            <h2 style={{fontSize: "clamp(1.4rem, 5vw, 2rem)", fontWeight: "700", marginBottom: "8px"}}>
-              Found <span style={{background: "linear-gradient(135deg,#a855f7,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"}}>{repos.length} repos</span> for @{username}
-            </h2>
-            <p style={{color: "#9ca3af"}}>These will be used to generate your AI portfolio.</p>
-          </div>
-          <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "14px", marginBottom: "24px"}}>
-            {repos.map((repo) => (
-              <div key={repo.id} style={{background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "16px"}}>
-                <h3 style={{color: "#a78bfa", fontWeight: "600", marginBottom: "6px"}}>{repo.name}</h3>
-                <p style={{color: "#9ca3af", fontSize: "0.875rem", marginBottom: "12px"}}>{repo.description || "No description"}</p>
-                <div style={{display: "flex", gap: "12px", fontSize: "0.8rem", color: "#6b7280", flexWrap: "wrap"}}>
-                  <span>⭐ {repo.stargazers_count}</span>
-                  <span>🍴 {repo.forks_count}</span>
-                  {repo.language && <span>💻 {repo.language}</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{display: "flex", gap: "12px"}}>
-            <button onClick={handleReset} className="btn-press" style={{padding: "12px 20px", borderRadius: "12px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#d1d5db", cursor: "pointer", fontWeight: "600", whiteSpace: "nowrap"}}>
-              ← Back
-            </button>
-            <button onClick={handleGeneratePortfolio} className="btn-press" disabled={loading}
-              style={{flex: 1, padding: "12px", borderRadius: "12px", background: "linear-gradient(135deg,#7c3aed,#6d28d9)", boxShadow: "0 0 25px rgba(124,58,237,0.4)", border: "none", color: "white", cursor: "pointer", fontWeight: "700", fontSize: "0.95rem", opacity: loading ? 0.5 : 1}}>
-              {loading ? "✨ Generating..." : "✨ Generate Portfolio"}
-            </button>
-          </div>
-          {error && <p style={{color: "#f87171", marginTop: "16px"}}>{error}</p>}
+{step === "repos" && (
+  <div style={{maxWidth: "700px", margin: "0 auto", padding: "0 16px"}}>
+    <div style={{marginBottom: "24px"}}>
+      <h2 style={{fontSize: "clamp(1.4rem, 5vw, 2rem)", fontWeight: "700", marginBottom: "8px"}}>
+        Found <span style={{background: "linear-gradient(135deg,#a855f7,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"}}>{repos.length} repos</span> for @{username}
+      </h2>
+      {repos.length === 0 ? (
+        <div style={{background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "12px", padding: "20px", marginTop: "16px", textAlign: "center"}}>
+          <p style={{color: "#f87171", fontWeight: "700", fontSize: "1rem", marginBottom: "6px"}}>⚠️ No public repositories found</p>
+          <p style={{color: "#9ca3af", fontSize: "0.875rem", lineHeight: "1.6"}}>This GitHub account has no public repos. PortfolioAI cannot generate a portfolio without real projects. Please add at least one public repository to GitHub first.</p>
         </div>
+      ) : (
+        <p style={{color: "#9ca3af"}}>These will be used to generate your AI portfolio.</p>
       )}
+    </div>
 
+    {repos.length > 0 && (
+      <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "14px", marginBottom: "24px"}}>
+        {repos.map((repo) => (
+          <div key={repo.id} style={{background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "16px"}}>
+            <h3 style={{color: "#a78bfa", fontWeight: "600", marginBottom: "6px"}}>{repo.name}</h3>
+            <p style={{color: "#9ca3af", fontSize: "0.875rem", marginBottom: "12px"}}>{repo.description || "No description"}</p>
+            <div style={{display: "flex", gap: "12px", fontSize: "0.8rem", color: "#6b7280", flexWrap: "wrap"}}>
+              <span>⭐ {repo.stargazers_count}</span>
+              <span>🍴 {repo.forks_count}</span>
+              {repo.language && <span>💻 {repo.language}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    <div style={{display: "flex", gap: "12px"}}>
+      <button onClick={handleReset} className="btn-press" style={{padding: "12px 20px", borderRadius: "12px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#d1d5db", cursor: "pointer", fontWeight: "600", whiteSpace: "nowrap"}}>
+        ← Back
+      </button>
+      <button
+        onClick={handleGeneratePortfolio}
+        className="btn-press"
+        disabled={loading || repos.length === 0}
+        style={{flex: 1, padding: "12px", borderRadius: "12px", background: repos.length === 0 ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg,#7c3aed,#6d28d9)", boxShadow: repos.length === 0 ? "none" : "0 0 25px rgba(124,58,237,0.4)", border: repos.length === 0 ? "1px solid rgba(255,255,255,0.1)" : "none", color: repos.length === 0 ? "#6b7280" : "white", cursor: repos.length === 0 ? "not-allowed" : "pointer", fontWeight: "700", fontSize: "0.95rem", opacity: loading ? 0.5 : 1}}>
+        {repos.length === 0 ? "⚠️ No repos to generate from" : loading ? "✨ Generating..." : "✨ Generate Portfolio"}
+      </button>
+    </div>
+    {error && <p style={{color: "#f87171", marginTop: "16px"}}>{error}</p>}
+  </div>
+)}
       {/* STEP 3 — Portfolio Output */}
       {step === "portfolio" && portfolio && (
         <div style={{maxWidth: "860px", margin: "0 auto", padding: "0 16px"}}>

@@ -4,7 +4,13 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request) {
   try {
-    const { repos, username, profile } = await request.json();
+    const { repos, username } = await request.json();
+
+    if (!repos || repos.length === 0) {
+      return Response.json({ 
+    portfolio: "NO_REPOS"
+  });
+    }
 
     const repoSummary = repos
       .map((r) => `- ${r.name}: ${r.description || "No description"} (${r.language || "Unknown"}, ⭐${r.stargazers_count})`)
@@ -12,33 +18,35 @@ export async function POST(request) {
 
     const prompt = `You are a professional portfolio writer for developers.
 
-Based on the following GitHub repositories for the user "${username}", write a complete developer portfolio in this EXACT format:
+STRICT RULES — follow these exactly:
+- ONLY write about the repositories listed below. Do NOT invent anything.
+- Do NOT add projects, skills, or technologies not present in the list.
+- Be specific and reference actual repo names.
 
-## Title
-A short professional job title (e.g. "Full-Stack Developer" or "Frontend Engineer & AI Enthusiast") — max 6 words
+Developer GitHub username: "${username}"
 
-## Bio
-A compelling 3-sentence professional bio about this developer based on their projects.
-
-## Skills
-A comma-separated list of technical skills inferred from their repos.
-## Projects
-Write EXACTLY one entry per project using this format, no exceptions:
-
-### projectname
-2-3 sentences about this specific project only.
-
-### nextprojectname  
-2-3 sentences about this specific project only.
-
-Write a SEPARATE ### entry for EVERY single repo listed. Do not combine repos.
-
-Here are their repositories:
+Their repositories:
 ${repoSummary}
 
-Write in a professional but personable tone. Be specific about technologies used.`;
+Write a complete developer portfolio in this EXACT format:
 
-    const model = groq.chat.completions;
+## Title
+A short professional job title inferred from the repos — max 6 words
+
+## Bio
+A compelling 3-sentence professional bio based ONLY on the repos above.
+
+## Skills
+A comma-separated list of technical skills inferred ONLY from the repos above.
+
+## Projects
+For each repo listed above, write EXACTLY one entry:
+
+### reponame
+2-3 sentence description of this specific project only.
+
+Write a SEPARATE ### entry for EVERY single repo. Do not combine repos. Do not invent repos.`;
+
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
       model: "llama-3.3-70b-versatile",
@@ -46,6 +54,7 @@ Write in a professional but personable tone. Be specific about technologies used
 
     const text = completion.choices[0]?.message?.content || "";
     return Response.json({ portfolio: text });
+
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

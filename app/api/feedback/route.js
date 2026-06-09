@@ -6,6 +6,26 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 export async function POST(request) {
   try {
     const { portfolio, username, portfolioId } = await request.json();
+    if (!portfolio.projects || portfolio.projects.length === 0) {
+  const emptyFeedback = {
+    score: "0",
+    strengths: [],
+    weaknesses: ["No public repositories found on GitHub"],
+    missing: ["At least one original project", "A README file explaining your work", "Commits showing real coding activity"],
+    suggestions: [
+      "Start by pushing any project to GitHub — even a small one",
+      "Add descriptions to your repos so recruiters understand your work",
+      "Make at least 3 original projects before applying for jobs"
+    ],
+    verdict: "This profile has no public repositories yet. Start building and pushing projects to GitHub to get a real portfolio score."
+  };
+  
+  if (portfolioId) {
+    await supabase.from("portfolios").update({ feedback: emptyFeedback }).eq("id", portfolioId);
+  }
+  
+  return Response.json({ feedback: emptyFeedback });
+}
 
     const prompt = `You are a senior tech recruiter with 10+ years hiring developers at top companies like Google, Meta, and startups.
 
