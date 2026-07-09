@@ -88,38 +88,34 @@ export default function Home() {
   const [shareUrl, setShareUrl] = useState("");
   const portfolioRef = useRef(null);
 
-  async function handleFetchRepos() {
-    if (!username) return;
-    setLoading(true);
-    setError("");
-    setRepos([]);
-    setPortfolio(null);
-    try {
-      const [reposRes, profileRes] = await Promise.all([
-        fetch(`https://api.github.com/users/${username}/repos?sort=stars&per_page=6`),
-        fetch(`https://api.github.com/users/${username}`)
-      ]);
-      if (!reposRes.ok) throw new Error("GitHub user not found");
-     const reposData = await reposRes.json();
-const profileData = await profileRes.json();
+async function handleFetchRepos() {
+  if (!username) return;
+  setLoading(true);
+  setError("");
+  setRepos([]);
+  setPortfolio(null);
+  try {
+    const [reposRes, profileRes] = await Promise.all([
+      fetch(`https://api.github.com/users/${username}/repos?sort=stars&per_page=6`),
+      fetch(`https://api.github.com/users/${username}`)
+    ]);
+    if (!reposRes.ok) throw new Error("GitHub user not found");
+    const reposData = await reposRes.json();
+    const profileData = await profileRes.json();
 
-if (!Array.isArray(reposData) || reposData.length === 0) {
-  throw new Error("⚠️ This GitHub account has no public repositories. PortfolioAI needs at least one public repo to generate a portfolio.");
-}
-if (publicRepos.length === 0) {
-  throw new Error("This account only has forked repositories. PortfolioAI works best with original projects!");
-}
-setRepos(publicRepos.slice(0, 6));
-
-setRepos(reposData);
-setGithubProfile(profileData);
-setStep("repos");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    if (!Array.isArray(reposData) || reposData.length === 0) {
+      throw new Error("⚠️ This GitHub account has no public repositories. PortfolioAI needs at least one public repo to generate a portfolio.");
     }
+
+    setRepos(reposData);
+    setGithubProfile(profileData);
+    setStep("repos");
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
   }
+}
 
   async function handleGeneratePortfolio() {
   if (!repos || repos.length === 0) {
@@ -555,23 +551,36 @@ setStep("repos");
             <p style={{color: "#6b7280", fontSize: "0.8rem", lineHeight: "1.7", marginBottom: "16px"}}>
               Turn your GitHub repos into a stunning developer portfolio with AI. Free to use.
             </p>
-            <div style={{display: "flex", gap: "10px"}}>
-              {[
-                {icon: "🐙", href: "https://github.com/rimsal-beep/portfolioai"},
-                {icon: "𝕏", href: "https://twitter.com"},
-                {icon: "💼", href: "https://linkedin.com"},
-              ].map((s, i) => (
-                <a key={i} href={s.href} target="_blank" rel="noopener noreferrer"
-                  style={{width: "34px", height: "34px", borderRadius: "8px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: "0.9rem"}}>
-                  {s.icon}
-                </a>
-              ))}
-            </div>
+          <div style={{display: "flex", gap: "10px"}}>
+  {/* GitHub */}
+  <a href="https://github.com/rimsal-beep/portfolioai" target="_blank" rel="noopener noreferrer"
+    style={{width: "34px", height: "34px", borderRadius: "8px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none"}}>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="#9ca3af" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48 0-.24-.01-.87-.01-1.7-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.8-.22 1.65-.33 2.5-.33.85 0 1.7.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/>
+    </svg>
+  </a>
+
+  {/* X / Twitter */}
+  <a href="https://twitter.com/YOUR_HANDLE" target="_blank" rel="noopener noreferrer"
+    style={{width: "34px", height: "34px", borderRadius: "8px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none"}}>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="#9ca3af" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+    </svg>
+  </a>
+
+  {/* LinkedIn */}
+  <a href="https://linkedin.com/in/YOUR_PROFILE" target="_blank" rel="noopener noreferrer"
+    style={{width: "34px", height: "34px", borderRadius: "8px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none"}}>
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="#9ca3af" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+    </svg>
+  </a>
+</div>
           </div>
           <div>
             <p style={{color: "white", fontWeight: "600", fontSize: "0.875rem", marginBottom: "14px"}}>Product</p>
             <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
-              {[{label: "Generate Portfolio", href: "/"}, {label: "How it Works", href: "/"}, {label: "Features", href: "/"}].map((l, i) => (
+             {[{label: "Generate Portfolio", href: "/"}, {label: "How it Works", href: "#how-it-works"}, {label: "Features", href: "#features"}].map((l, i) => (
                 <a key={i} href={l.href} style={{color: "#6b7280", fontSize: "0.8rem", textDecoration: "none"}}>{l.label}</a>
               ))}
             </div>
@@ -579,11 +588,11 @@ setStep("repos");
           <div>
             <p style={{color: "white", fontWeight: "600", fontSize: "0.875rem", marginBottom: "14px"}}>Resources</p>
             <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
-              {[
-                {label: "GitHub Repo", href: "https://github.com/rimsal-beep/portfolioai"},
-                {label: "Report a Bug", href: "mailto:contact@portfolioai.dev"},
-                {label: "Request Feature", href: "mailto:contact@portfolioai.dev"},
-              ].map((l, i) => (
+          {[
+  {label: "GitHub Repo", href: "https://github.com/rimsal-beep/portfolioai"},
+  {label: "Report a Bug", href: "mailto:YOUR_REAL_EMAIL@gmail.com"},
+  {label: "Request Feature", href: "mailto:YOUR_REAL_EMAIL@gmail.com"},
+].map((l, i) => (
                 <a key={i} href={l.href} style={{color: "#6b7280", fontSize: "0.8rem", textDecoration: "none"}}>{l.label}</a>
               ))}
             </div>
