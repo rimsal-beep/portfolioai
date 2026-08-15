@@ -95,13 +95,16 @@ async function handleFetchRepos() {
   setRepos([]);
   setPortfolio(null);
   try {
-    const [reposRes, profileRes] = await Promise.all([
-      fetch(`https://api.github.com/users/${username}/repos?sort=stars&per_page=6`),
-      fetch(`https://api.github.com/users/${username}`)
-    ]);
-    if (!reposRes.ok) throw new Error("GitHub user not found");
-    const reposData = await reposRes.json();
-    const profileData = await profileRes.json();
+    const res = await fetch("/api/github", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const reposData = data.repos;
+    const profileData = data.profile;
 
     if (!Array.isArray(reposData) || reposData.length === 0) {
       throw new Error("⚠️ This GitHub account has no public repositories. PortfolioAI needs at least one public repo to generate a portfolio.");
@@ -116,35 +119,6 @@ async function handleFetchRepos() {
     setLoading(false);
   }
 }
-
-  async function handleGeneratePortfolio() {
-  if (!repos || repos.length === 0) {
-    alert("⚠️ This GitHub account has no public repositories. Cannot generate a portfolio.");
-    return;
-  }
-  setLoading(true);
-  setError("");
-  setPortfolio(null);
-  try {
-    const res = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ repos, username, profile: githubProfile }),
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    if (!data.portfolio || data.portfolio.includes("NO_REPOS")) {
-      throw new Error("No repositories found — cannot generate portfolio.");
-    }
-    setPortfolio(parsePortfolio(data.portfolio));
-    setStep("portfolio");
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-}
-
   async function handleDownloadPDF() {
     try {
       const res = await fetch("/api/pdf", {
