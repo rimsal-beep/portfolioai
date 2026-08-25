@@ -2,14 +2,36 @@ import Groq from "groq-sdk";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+// Tried in order. If one is deprecated by Groq, the next is used automatically.
+const MODEL_FALLBACKS = [
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b",
+];
+
+async function generateWithFallback(prompt) {
+  let lastError;
+  for (const model of MODEL_FALLBACKS) {
+    try {
+      const completion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model,
+      });
+      return completion.choices[0]?.message?.content || "";
+    } catch (err) {
+      console.error(`Model ${model} failed:`, err.message);
+      lastError = err;
+      continue;
+    }
+  }
+  throw new Error("All AI models are currently unavailable. Please try again shortly.");
+}
+
 export async function POST(request) {
   try {
     const { repos, username } = await request.json();
 
     if (!repos || repos.length === 0) {
-      return Response.json({ 
-    portfolio: "NO_REPOS"
-  });
+      return Response.json({ portfolio: "NO_REPOS" });
     }
 
     const repoSummary = repos
@@ -47,12 +69,7 @@ For each repo listed above, write EXACTLY one entry:
 
 Write a SEPARATE ### entry for EVERY single repo. Do not combine repos. Do not invent repos.`;
 
-    const completion = await groq.chat.completions.create({
-      messages: [{ role: "user", content: prompt }],
-     model: "openai/gpt-oss-120b",
-    });
-
-    const text = completion.choices[0]?.message?.content || "";
+    const text = await generateWithFallback(prompt);
     return Response.json({ portfolio: text });
 
   } catch (error) {

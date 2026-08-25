@@ -3,29 +3,51 @@ import { supabase } from "@/lib/supabase";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+const MODEL_FALLBACKS = [
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b",
+];
+
+async function generateWithFallback(prompt) {
+  let lastError;
+  for (const model of MODEL_FALLBACKS) {
+    try {
+      const completion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model,
+      });
+      return completion.choices[0]?.message?.content || "";
+    } catch (err) {
+      console.error(`Model ${model} failed:`, err.message);
+      lastError = err;
+      continue;
+    }
+  }
+  throw new Error("All AI models are currently unavailable. Please try again shortly.");
+}
+
 export async function POST(request) {
   try {
     const { portfolio, username, portfolioId } = await request.json();
+
     if (!portfolio.projects || portfolio.projects.length === 0) {
-  const emptyFeedback = {
-    score: "0",
-    strengths: [],
-    weaknesses: ["No public repositories found on GitHub"],
-    missing: ["At least one original project", "A README file explaining your work", "Commits showing real coding activity"],
-    suggestions: [
-      "Start by pushing any project to GitHub — even a small one",
-      "Add descriptions to your repos so recruiters understand your work",
-      "Make at least 3 original projects before applying for jobs"
-    ],
-    verdict: "This profile has no public repositories yet. Start building and pushing projects to GitHub to get a real portfolio score."
-  };
-  
-  if (portfolioId) {
-    await supabase.from("portfolios").update({ feedback: emptyFeedback }).eq("id", portfolioId);
-  }
-  
-  return Response.json({ feedback: emptyFeedback });
-}
+      const emptyFeedback = {
+        score: "0",
+        strengths: [],
+        weaknesses: ["No public repositories found on GitHub"],
+        missing: ["At least one original project", "A README file explaining your work", "Commits showing real coding activity"],
+        suggestions: [
+          "Start by pushing any project to GitHub — even a small one",
+          "Add descriptions to your repos so recruiters understand your work",
+          "Make at least 3 original projects before applying for jobs"
+        ],
+        verdict: "This profile has no public repositories yet. Start building and pushing projects to GitHub to get a real portfolio score."
+      };
+      if (portfolioId) {
+        await supabase.from("portfolios").update({ feedback: emptyFeedback }).eq("id", portfolioId);
+      }
+      return Response.json({ feedback: emptyFeedback });
+    }
 
     const prompt = `You are a senior tech recruiter with 10+ years hiring developers at top companies like Google, Meta, and startups.
 
@@ -67,14 +89,8 @@ SUGGESTIONS:
 VERDICT:
 [2 sentences. Be specific. Mention actual skills and projects. Say exactly what kind of role this developer is ready for right now.]`;
 
-    const completion = await groq.chat.completions.create({
-      messages: [{ role: "user", content: prompt }],
-      model: "openai/gpt-oss-120b",
-    });
+    const text = await generateWithFallback(prompt);
 
-    const text = completion.choices[0]?.message?.content || "";
-console.log("RAW AI FEEDBACK OUTPUT:", text);
-    // Parse feedback
     const result = { score: "", strengths: [], weaknesses: [], missing: [], suggestions: [], verdict: "" };
     const lines = text.split("\n");
     let current = "";
@@ -93,18 +109,13 @@ console.log("RAW AI FEEDBACK OUTPUT:", text);
       }
     }
 
-    // Save feedback to Supabase if portfolioId exists
     if (portfolioId) {
-      await supabase
-        .from("portfolios")
-        .update({ feedback: result })
-        .eq("id", portfolioId);
+      await supabase.from("portfolios").update({ feedback: result }).eq("id", portfolioId);
     }
 
     return Response.json({ feedback: result });
 
-} catch (error) {
-  console.error("FEEDBACK ERROR:", error);
-  return Response.json({ error: error.message }, { status: 500 });
-}
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
 }
