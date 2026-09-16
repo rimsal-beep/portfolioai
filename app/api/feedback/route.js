@@ -90,6 +90,7 @@ VERDICT:
 [2 sentences. Be specific. Mention actual skills and projects. Say exactly what kind of role this developer is ready for right now.]`;
 
     const text = await generateWithFallback(prompt);
+    console.log("RAW AI FEEDBACK OUTPUT:", text);
 
     const result = { score: "", strengths: [], weaknesses: [], missing: [], suggestions: [], verdict: "" };
     const lines = text.split("\n");

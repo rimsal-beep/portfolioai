@@ -10,13 +10,18 @@ export default async function FeedbackPage({ params }) {
     .eq("id", id)
     .single();
 
-  if (error || !data) {
-    return (
-      <main style={{minHeight: "100vh", background: "#030712", color: "white", display: "flex", alignItems: "center", justifyContent: "center"}}>
-        <p style={{color: "#9ca3af"}}>Feedback not found.</p>
-      </main>
-    );
-  }
+  if (!data?.feedback || !data.feedback.score) {
+  return (
+    <main style={{minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px"}}>
+      <div style={{textAlign: "center", maxWidth: "400px"}}>
+        <p style={{fontSize: "1.2rem", fontWeight: "700", marginBottom: "8px", color: "#e5e7eb"}}>⚠️ Feedback unavailable</p>
+        <p style={{color: "#9ca3af", fontSize: "0.9rem"}}>
+          Something went wrong generating this feedback — likely a temporary AI service hiccup. Please go back and try generating feedback again.
+        </p>
+      </div>
+    </main>
+  );
+}
 
   const f = data.feedback || { score: "N/A", strengths: [], weaknesses: [], missing: [], suggestions: [], verdict: "Feedback not available." };
 
