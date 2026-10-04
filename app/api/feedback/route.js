@@ -9,21 +9,73 @@ const MODEL_FALLBACKS = [
 ];
 
 async function generateWithFallback(prompt) {
-  let lastError;
+  const MAX_RETRIES_PER_MODEL = 2;
+
   for (const model of MODEL_FALLBACKS) {
-    try {
-      const completion = await groq.chat.completions.create({
-        messages: [{ role: "user", content: prompt }],
-        model,
-      });
-      return completion.choices[0]?.message?.content || "";
-    } catch (err) {
-      console.error(`Model ${model} failed:`, err.message);
-      lastError = err;
-      continue;
+    for (let attempt = 1; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
+      try {
+        const completion = await groq.chat.completions.create({
+          messages: [{ role: "user", content: prompt }],
+          model,
+        });
+        return completion.choices[0]?.message?.content || "";
+      } catch (err) {
+        console.error(`Model ${model} attempt ${attempt} failed:`, err.message);
+        if (attempt < MAX_RETRIES_PER_MODEL) {
+          await new Promise((resolve) => setTimeout(resolve, 800));
+        }
+      }
     }
   }
   throw new Error("All AI models are currently unavailable. Please try again shortly.");
+}
+
+function parseFeedbackText(raw) {
+  const result = { score: "", strengths: [], weaknesses: [], missing: [], suggestions: [], verdict: "" };
+  const sections = {
+    STRENGTHS: "strengths",
+    WEAKNESSES: "weaknesses",
+    MISSING: "missing",
+    SUGGESTIONS: "suggestions",
+    VERDICT: "verdict",
+  };
+
+  // strip markdown noise (bold, backticks)
+  const text = raw.replace(/\*\*/g, "").replace(/__/g, "").replace(/`/g, "");
+  let current = "";
+
+  for (const rawLine of text.split("\n")) {
+    const line = rawLine.trim().replace(/^#+\s*/, "");
+    if (!line) continue;
+
+    const scoreMatch = line.match(/^SCORE\s*:?\s*(\d+(?:\.\d+)?)/i);
+    if (scoreMatch) {
+      result.score = scoreMatch[1];
+      current = "";
+      continue;
+    }
+
+    const header = line.match(/^(STRENGTHS|WEAKNESSES|MISSING|SUGGESTIONS|VERDICT)(?:\s*:\s*(.*)|\s*)$/i);
+    if (header) {
+      current = sections[header[1].toUpperCase()];
+      if (current === "verdict" && header[2]) result.verdict += header[2] + " ";
+      continue;
+    }
+
+    if (current === "verdict") {
+      result.verdict += line + " ";
+      continue;
+    }
+
+    const bullet = line.match(/^(?:[-*•–]|\d+[.)])\s+(.*)$/);
+    if (bullet && current) result[current].push(bullet[1]);
+  }
+
+  return result;
+}
+
+function isValidFeedback(f) {
+  return f.score && f.strengths.length > 0 && f.verdict.trim().length > 0;
 }
 
 export async function POST(request) {
@@ -89,25 +141,23 @@ SUGGESTIONS:
 VERDICT:
 [2 sentences. Be specific. Mention actual skills and projects. Say exactly what kind of role this developer is ready for right now.]`;
 
-    const text = await generateWithFallback(prompt);
-    console.log("RAW AI FEEDBACK OUTPUT:", text);
-
-    const result = { score: "", strengths: [], weaknesses: [], missing: [], suggestions: [], verdict: "" };
-    const lines = text.split("\n");
-    let current = "";
-    for (const line of lines) {
-      const t = line.trim();
-      if (t.startsWith("SCORE:")) { result.score = t.replace("SCORE:", "").trim(); continue; }
-      if (t === "STRENGTHS:") { current = "strengths"; continue; }
-      if (t === "WEAKNESSES:") { current = "weaknesses"; continue; }
-      if (t === "MISSING:") { current = "missing"; continue; }
-      if (t === "SUGGESTIONS:") { current = "suggestions"; continue; }
-      if (t === "VERDICT:") { current = "verdict"; continue; }
-      if (t.startsWith("- ") && current !== "verdict") {
-        result[current]?.push(t.replace("- ", ""));
-      } else if (current === "verdict" && t) {
-        result.verdict += t + " ";
+    // Ask the AI, validate the result, and quietly retry if it's unreadable
+    let result = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const text = await generateWithFallback(prompt);
+      const parsed = parseFeedbackText(text);
+      if (isValidFeedback(parsed)) {
+        result = parsed;
+        break;
       }
+      console.error(`Unparseable feedback (attempt ${attempt}):`, text);
+    }
+
+    if (!result) {
+      return Response.json(
+        { error: "The AI returned an unreadable response. Please try again." },
+        { status: 502 }
+      );
     }
 
     if (portfolioId) {
